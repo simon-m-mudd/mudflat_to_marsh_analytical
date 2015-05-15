@@ -27,11 +27,13 @@ def fit_exponential_from_file(filename, threshold_velocity):
     print "Maximum windspeed is: "+str(max_wind)
     
     # number of bins in the histogram
-    bins=50
+    bins=20
     
     # now build a histogram from these data
-    hist, bin_edges = np.histogram(wind_data, bins, density=True) # Calculate histogram
+    hist, bin_edges = np.histogram(wind_data, bins, (0,20), density=True) # Calculate histogram
     x_hist = bin_edges[1:] # Take the upper edges of the bins
+    print "bin edges are: " + str(x_hist)
+    #np.histogram()
 
     #now get the pdf    
     y_pdf = hist/hist.cumsum().max()
@@ -58,7 +60,7 @@ def fit_exponential_from_file(filename, threshold_velocity):
     popt_exp_pdf, pcov_exp_pdf = curve_fit(sd.exponential_fxn, trunc_x, trunc_pdf)
      
     # get the fitted pdf
-    print "The fitted decaty coefficient is: "
+    print "The fitted decay coefficient is: "
     print popt_exp_pdf  
     y_exp_fit = sd.exponential_fxn(trunc_x,popt_exp_pdf)        
     
@@ -72,7 +74,7 @@ def fit_exponential_from_file(filename, threshold_velocity):
     
 
 # This function plots the results from the fitting
-def plot_exponential_fit(x_hist,y_pdf,trunc_x,trunc_pdf,y_exp_fit,popt_exp_pdf):      
+def plot_exponential_fit(x_hist,y_pdf,trunc_x,trunc_pdf,y_exp_fit,popt_exp_pdf,threshold_velocity,RMSE):      
 
     ## PLOT THE GRAPH
     plt.figure(figsize=(12,6))
@@ -84,29 +86,31 @@ def plot_exponential_fit(x_hist,y_pdf,trunc_x,trunc_pdf,y_exp_fit,popt_exp_pdf):
     plt.xlabel('x')
     plt.ylabel('pdf')
     ax1.legend(loc='upper right')
+    plt.title('velocity: ' + str(threshold_velocity))
     
     # The second subplot plots the data vs the fit
     ax2=plt.subplot(212)
     ax2.plot(trunc_x,trunc_pdf,'ro',label='truncated pdf')
-    ax2.plot(trunc_x,y_exp_fit,'gx',label='truncated pdf')
+    ax2.plot(trunc_x,y_exp_fit,'gx',label='fit pdf')
     #plt.xlim(0,150)
     plt.xlabel('x')
     plt.ylabel('pdf')
-    ax2.legend(loc='upper right')       
+    ax2.legend(loc='upper right')
+    plt.title('RMSE: ' + str(RMSE))
     
+    plot_fname = "Fit_plot_v"+str(threshold_velocity)+".png"
+    plt.savefig(plot_fname, format='png')
+    plt.clf()
 
-    plt.show()        
-    
 if __name__ == "__main__":
     #fit_weibull_from_file(sys.argv[1])
-    filename = 'c:\\Users\\smudd\\Documents\\Papers\\Tidal_paper_padova\\Wind_Data\\s_andrea_ok.txt'
+    filename = 'c:\\Users\\smudd\\Documents\\Papers\\Tidal_paper_padova\\Wind_Data\\s_leonardo_ok.txt'
     threshold_velocity = 5
-    for i in range(1,5):
+    for i in range(1,6):
         threshold_velocity = i
         print "threshold velocity is: " + str(threshold_velocity)
         x_hist,y_pdf,trunc_x,trunc_pdf,popt_exp_pdf,y_exp_fit,RMSE = fit_exponential_from_file(filename,threshold_velocity) 
+        plot_exponential_fit(x_hist,y_pdf,trunc_x,trunc_pdf,y_exp_fit,popt_exp_pdf,threshold_velocity,RMSE)
     
-    threshold_velocity= 2    
-    x_hist,y_pdf,trunc_x,trunc_pdf,popt_exp_pdf,y_exp_fit,RMSE = fit_exponential_from_file(filename,threshold_velocity)  
-    plot_exponential_fit(x_hist,y_pdf,trunc_x,trunc_pdf,y_exp_fit,popt_exp_pdf)
+
     
