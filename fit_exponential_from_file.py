@@ -15,24 +15,14 @@ from scipy.optimize import curve_fit # Import the curve fitting module
 import simple_distributions as sd
 
 
-def fit_exponential_from_file(filename):
+def fit_exponential_from_file(filename, threshold_velocity):
     # State the filename
     #filename = 'c:\\Users\\smudd\\Documents\\Papers\\Tidal_paper_padova\\Wind_Data\\s_andrea_ok.txt'    
     
     # First load the wind data file. This data just has a wind speed on every line
     wind_data = np.loadtxt(filename)
     
-    # make a second dataset of wind values below a threshold
-    threshold = 5.0
-    wind_data_thresh = [x for x in wind_data if x >= threshold]
-
-    # get an unshifted dataset
-    wind_data_thresh_unshift = wind_data_thresh
-    
-    # now shift the thresholded data
-    wind_data_thresh[:] = [x - 5 for x in wind_data_thresh] 
-
-    
+    # get the maximum windspeed
     max_wind = wind_data.max()
     print "Maximum windspeed is: "+str(max_wind)
     
@@ -43,102 +33,80 @@ def fit_exponential_from_file(filename):
     hist, bin_edges = np.histogram(wind_data, bins, density=True) # Calculate histogram
     x_hist = bin_edges[1:] # Take the upper edges of the bins
 
-    hist_thresh, bin_edges_thresh = np.histogram(wind_data_thresh, bins, density=True) # Calculate histogram
-    x_hist_thresh = bin_edges_thresh[1:] # Take the upper edges of the bins
-    
-    # now do it for the unshifted data    
-    hist_thresh_us, bin_edges_thresh_us = np.histogram(wind_data_thresh_unshift, bins, density=True) # Calculate histogram
-    x_hist_thresh_us = bin_edges_thresh_us[1:] # Take the upper edges of the bins
-    
     #now get the pdf    
     y_pdf = hist/hist.cumsum().max()
-    y_pdf_thresh = hist_thresh/hist_thresh.cumsum().max()
-    y_pdf_thresh_us = hist_thresh_us/hist_thresh_us.cumsum().max()
     
     # now get the cdf
     y_cdf = hist.cumsum()/hist.cumsum().max()  # Normalise the cumulative sum
-    y_cdf_thresh = hist_thresh.cumsum()/hist_thresh.cumsum().max()  
-    y_cdf_thresh_us = hist_thresh_us.cumsum()/hist_thresh_us.cumsum().max() 
+    
+    # now get a truncated version of the data, cutting off any values less
+    # than the threshold   
+    truncated_x = []
+    truncated_pdf = []
+    truncated_cdf = []    
+    for x,pdf_value,cdf_value in zip(x_hist,y_pdf,y_cdf):
+        if x >= threshold_velocity:
+            truncated_x.append(x)
+            truncated_pdf.append(pdf_value)
+            truncated_cdf.append(cdf_value)
+            
+    # turn the data into numpy arrays, necessary for the fitting routine below
+    trunc_x = np.asarray(truncated_x)
+    trunc_pdf = np.asarray(truncated_pdf)
+
+    # fit the pdf for the thresholded data. 
+    popt_exp_pdf, pcov_exp_pdf = curve_fit(sd.exponential_fxn, trunc_x, trunc_pdf)
+     
+    # get the fitted pdf
+    print "The fitted decaty coefficient is: "
+    print popt_exp_pdf  
+    y_exp_fit = sd.exponential_fxn(trunc_x,popt_exp_pdf)        
+    
+    
+    RMSE =  sd.RMSE(truncated_pdf,y_exp_fit)
+    print "The RMSE is: " + str(RMSE)
+    
+    return x_hist,y_pdf,trunc_x,trunc_pdf,popt_exp_pdf,y_exp_fit,RMSE
 
 
-    # fit the cdf for both the thresholded and the raw data. 
-    # the raw data gets fit with a weibull, the thresholded with and exponential
-    #popt_wb, pcov_wb = curve_fit(weibull_pdf, x_hist, y_pdf, p0 = [1,5] )
-    popt_exp, pcov_exp = curve_fit(exponential_cdf, x_hist_thresh, y_cdf_thresh)
-    popt_ln, pcov_exp = curve_fit(lognormal_pdf, x_hist, y_pdf)
     
-    # also fit the data using the weibul but only for thresholded data
-    popt_lnt, pcov_lnt = curve_fit(lognormal_pdf, x_hist_thresh_us, y_cdf_thresh_us)
-    
-    # get the fitted cdfs
-    #print popt_wb
-    print popt_exp
-    print popt_ln
-    print popt_lnt
-    #y_wb_fit = weibull_cdf(x_hist,20,2)    
-    y_exp_fit = exponential_cdf(x_hist_thresh,popt_exp)        
-    y_ln_fit = lognormal_pdf(x_hist,popt_ln[0],popt_ln[1])   
-    y_lnt_fit = lognormal_pdf(x_hist_thresh_us,popt_lnt[0],popt_lnt[1])   
-    
-    
+
+# This function plots the results from the fitting
+def plot_exponential_fit(x_hist,y_pdf,trunc_x,trunc_pdf,y_exp_fit,popt_exp_pdf):      
+
     ## PLOT THE GRAPH
     plt.figure(figsize=(12,6))
-    ax1=plt.subplot(221)
-    ax1.plot(x_hist,y_cdf,label='cdf')
-    #ax1.plot(x_hist,y_ln_fit,label='cdf, fit')
+    
+    # The first subplot is the data, and the truncated data
+    ax1=plt.subplot(211)
+    ax1.plot(trunc_x,trunc_pdf,'ro',label='truncated pdf')    
+    ax1.plot(x_hist,y_pdf,'k.',label='raw pdf')   
+    plt.xlabel('x')
+    plt.ylabel('pdf')
+    ax1.legend(loc='upper right')
+    
+    # The second subplot plots the data vs the fit
+    ax2=plt.subplot(212)
+    ax2.plot(trunc_x,trunc_pdf,'ro',label='truncated pdf')
+    ax2.plot(trunc_x,y_exp_fit,'gx',label='truncated pdf')
     #plt.xlim(0,150)
     plt.xlabel('x')
-    plt.ylabel('cdf')
-    ax1.legend(loc='lower right')
+    plt.ylabel('pdf')
+    ax2.legend(loc='upper right')       
     
-    #ax2=plt.subplot(223)
-    #ax2.plot(x_hist_thresh,y_cdf_thresh,label='cdf, thresholded')
-    #ax2.plot(x_hist_thresh,y_exp_fit,label='cdf, fit')
-    #plt.xlim(0,150)
-    #plt.xlabel('x')
-    #plt.ylabel('cdf')
-    #ax2.legend(loc='lower right')    
-    #
-    ax2=plt.subplot(223)
-    ax2.plot(x_hist_thresh_us,y_cdf_thresh_us,label='cdf, thresholded')
-    ax2.plot(x_hist_thresh_us,y_lnt_fit,label='cdf, fit')
-    plt.xlim(0,150)
-    plt.xlabel('x')
-    plt.ylabel('cdf')
-    ax2.legend(loc='lower right')       
-    
-    ax3=plt.subplot(222)
-    ax3.plot(x_hist, y_pdf, 'ro', label='pdf')
-    ax3.plot(x_hist, y_ln_fit, 'bx', label='pdf')
-    ax3.plot(x_hist_thresh_us, y_lnt_fit, 'gx', label='pdf, threshold ln')
-    plt.xlabel('x')
-    plt.ylabel('pdf')    
-    ax3.legend(loc='upper right')
-    
-    ax4=plt.subplot(224)
-    ax4.plot(x_hist_thresh, y_pdf_thresh, 'bo', label='pdf, thresholded')
-    plt.xlabel('x')
-    plt.ylabel('pdf')    
-    ax4.legend(loc='upper right')
-    
-    #ax2.plot(x,stats.lognorm.cdf(x, shape_out, loc=0, scale=scale_out), label='Fitted distribution')
-    #plt.xlim(0,150)
-    #ax2.set_ylim(0,1.0)
-    #plt.xlabel('x')
-    #plt.ylabel('y_cdf')
-    #leg=ax2.legend(loc='lower right', numpoints=1)
-    #results_txt="""M_in=%.2f
-    #M_out=%.2f
-    #s_in=%.2f
-    #s_out=%.2f""" % (M, scale_out, s, np.exp(shape_out))
-    #txt=plt.text(0.97, 0.3, results_txt, transform=ax2.transAxes, horizontalalignment='right', fontsize='large')
-    plt.show()    
 
-      
-    
+    plt.show()        
     
 if __name__ == "__main__":
     #fit_weibull_from_file(sys.argv[1])
-    filename = 'c:\\Users\\smudd\\Documents\\Papers\\Tidal_paper_padova\\Wind_Data\\s_andrea_ok.txt'   
-    fit_exponential_from_file(filename) 
+    filename = 'c:\\Users\\smudd\\Documents\\Papers\\Tidal_paper_padova\\Wind_Data\\s_andrea_ok.txt'
+    threshold_velocity = 5
+    for i in range(1,5):
+        threshold_velocity = i
+        print "threshold velocity is: " + str(threshold_velocity)
+        x_hist,y_pdf,trunc_x,trunc_pdf,popt_exp_pdf,y_exp_fit,RMSE = fit_exponential_from_file(filename,threshold_velocity) 
+    
+    threshold_velocity= 2    
+    x_hist,y_pdf,trunc_x,trunc_pdf,popt_exp_pdf,y_exp_fit,RMSE = fit_exponential_from_file(filename,threshold_velocity)  
+    plot_exponential_fit(x_hist,y_pdf,trunc_x,trunc_pdf,y_exp_fit,popt_exp_pdf)
     
