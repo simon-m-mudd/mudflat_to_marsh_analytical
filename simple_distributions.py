@@ -34,9 +34,15 @@ def exponential_fxn(x,lambda_exp):
 def RMSE(data,prediction):
     sum_err = 0
     n = len(data)
+    residual = []
     for d,p in zip(data,prediction):
         sum_err = (p-d)*(p-d)
-        
+        residual.append(p-d)
+    resid = np.asarray(residual)
+    sq_resid = np.power(resid,2)
+    
+    print "The square residuals are: "
+    print sq_resid    
     RMSE = np.sqrt(sum_err/n)
     return RMSE
          
