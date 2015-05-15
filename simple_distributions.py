@@ -28,3 +28,15 @@ def exponential_cdf(x,lambda_exp):
 def exponential_pdf(x,lambda_exp):
     return lambda_exp*np.exp(-x*lambda_exp)
     
+def exponential_fxn(x,lambda_exp):
+    return np.exp(-x*lambda_exp)
+
+def RMSE(data,prediction):
+    sum_err = 0
+    n = len(data)
+    for d,p in zip(data,prediction):
+        sum_err = (p-d)*(p-d)
+        
+    RMSE = np.sqrt(sum_err/n)
+    return RMSE
+         
