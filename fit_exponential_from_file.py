@@ -30,8 +30,10 @@ def fit_exponential_from_file(filename, threshold_velocity):
     bins=20
     
     # now build a histogram from these data
-    hist, bin_edges = np.histogram(wind_data, bins, (0,20), density=True) # Calculate histogram
-    x_hist = bin_edges[1:] # Take the upper edges of the bins
+    hist, bin_edges = np.histogram(wind_data, bins, (0.5,20.5), density=True) # Calculate histogram
+    
+    # This takes the middle of the bin to be compatible with the bin format of Andrea's code    
+    x_hist = bin_edges[1:]-0.5 
     print "bin edges are: " + str(x_hist)
     #np.histogram()
 
