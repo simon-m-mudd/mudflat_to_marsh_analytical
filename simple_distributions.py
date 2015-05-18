@@ -30,6 +30,18 @@ def exponential_pdf(x,lambda_exp):
     
 def exponential_fxn(x,lambda_exp):
     return np.exp(-x*lambda_exp)
+    
+def gaussian(x, mu, sig):
+    return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))    
+
+def double_gaussian(x,midpoint,sig,amplitude,spacing):
+    mu = midpoint-spacing/2
+    first_gauss = gaussian(x,mu,sig)
+    mu2 = midpoint+spacing/2
+    second_gauss = gaussian(x,mu2,sig)
+    double_gauss = np.multiply(amplitude,(np.add(first_gauss,second_gauss)))
+    return double_gauss
+    
 
 def RMSE(data,prediction):
     sum_err = 0
