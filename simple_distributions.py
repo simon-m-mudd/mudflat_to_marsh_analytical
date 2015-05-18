@@ -53,8 +53,8 @@ def RMSE(data,prediction):
     resid = np.asarray(residual)
     sq_resid = np.power(resid,2)
     
-    print "The square residuals are: "
-    print sq_resid    
+    #print "The square residuals are: "
+    #print sq_resid    
     RMSE = np.sqrt(sum_err/n)
     return RMSE
          
