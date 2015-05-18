@@ -22,16 +22,17 @@ def fit_double_gaussian_from_file(filename):
     depth = erosion_data[:,0]
     erate = erosion_data[:,1]
     
-    print "Depth is: " 
-    print depth
-    print "Erosion rate is: "
-    print erate
+    #print "Depth is: " 
+    #print depth
+    #print "Erosion rate is: "
+    #print erate
     # initial guesses
-    initial_guess = [0,0.001,1,1]    
+    #initial_guess = [0,0.001,1,1]    
     
     # now fit the erosion data to a double gaussian
-    popt_dg, pcov_dg = curve_fit(sd.double_gaussian, depth, erate,initial_guess)
-     
+    #popt_dg, pcov_dg = curve_fit(sd.double_gaussian, depth, erate,initial_guess)
+    popt_dg, pcov_dg = curve_fit(sd.double_gaussian, depth, erate)   
+   
     # get the fitted pdf
     print "The fitted components are: "
     print popt_dg 
@@ -44,12 +45,12 @@ def fit_double_gaussian_from_file(filename):
     return depth,erate,popt_dg,y_dg_fit,RMSE
 
 def generate_test_data(midpoint,sig,amplitude,spacing):
-    depth = np.linspace(-1, 1, num=21)
+    depth = np.linspace(-2, 2, num=201)
     double_gauss = sd.double_gaussian(depth,midpoint,sig,amplitude,spacing)
     
     test_data = zip(depth,double_gauss)
-    print "The data to go out is: "
-    print test_data
+    #print "The data to go out is: "
+    #print test_data
     np.savetxt('test_dg.txt', test_data, fmt='%2.6f')    
     
     return depth,double_gauss 
@@ -90,10 +91,10 @@ if __name__ == "__main__":
     #fit_weibull_from_file(sys.argv[1])
     filename = 'c:\\Users\\smudd\\Documents\\Papers\\Tidal_paper_padova\\Python_code\\test_dg.txt'
     
-    midpoint = 0
-    sig = 0.2
-    amplitude = 2
-    spacing = 0.5
+    midpoint = -0.1
+    sig = 0.5
+    amplitude = 2.6
+    spacing = 0.87
     generate_test_data(midpoint,sig,amplitude,spacing)
     
     depth,erate,popt_dg,y_dg_fit,RMSE = fit_double_gaussian_from_file(filename)
