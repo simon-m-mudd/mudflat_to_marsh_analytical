@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit # Import the curve fitting module
 import simple_distributions as sd
+import peak_detect as pd
 
 
 def fit_double_gaussian_from_file(filename):
@@ -22,16 +23,45 @@ def fit_double_gaussian_from_file(filename):
     depth = erosion_data[:,0]
     erate = erosion_data[:,1]
     
-    #print "Depth is: " 
-    #print depth
-    #print "Erosion rate is: "
-    #print erate
-    # initial guesses
-    #initial_guess = [0,0.001,1,1]    
+    # Find some peaks
+    _max, _min = pd.peakdetect(erate, depth, 20, 0.10)
+    xm = [p[0] for p in _max]
+    ym = [p[1] for p in _max]
+
+    # default initial guess
+    midpoint = 0
+    sig = 0.1
+    amplitude = 1
+    spacing = 1
+    
+    # now construct the initial guess from these data
+    n_peaks = len(xm)
+    if n_peaks == 1:
+        amplitude = ym[0]
+        spacing = 0
+        midpoint = xm[0]
+    else:
+        amplitude = max(ym)
+        spacing = xm[1]-xm[0]
+        midpoint = 0.5*(xm[1]+xm[0])
+    
+    # new initial guess    
+    initial_guess = [midpoint,sig,amplitude,spacing]
+    
+    print "Initial guess: "
+    print "midpoint: " + str(midpoint)
+    print "sigma: " + str(sig)
+    print "amplitude: " + str(amplitude)
+    print "spacing: " + str(spacing)
+        
+
+
+    # try to get some reasonable inital guesses based on the data
+    
     
     # now fit the erosion data to a double gaussian
-    #popt_dg, pcov_dg = curve_fit(sd.double_gaussian, depth, erate,initial_guess)
-    popt_dg, pcov_dg = curve_fit(sd.double_gaussian, depth, erate)   
+    popt_dg, pcov_dg = curve_fit(sd.double_gaussian, depth, erate,initial_guess)
+    #popt_dg, pcov_dg = curve_fit(sd.double_gaussian, depth, erate)   
    
     # get the fitted pdf
     print "The fitted components are: "
@@ -92,7 +122,7 @@ if __name__ == "__main__":
     filename = 'c:\\Users\\smudd\\Documents\\Papers\\Tidal_paper_padova\\Python_code\\test_dg.txt'
     
     midpoint = -0.1
-    sig = 0.5
+    sig = 0.1
     amplitude = 2.6
     spacing = 0.87
     generate_test_data(midpoint,sig,amplitude,spacing)
